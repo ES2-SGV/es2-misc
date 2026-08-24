@@ -49,10 +49,27 @@ docker compose up -d --build              # :5174 / :8081 / :5433
 docker compose down                       # -v também apaga o banco
 ```
 
+## Como o front acha a API
+
+O front chama a API direto (sem proxy no nginx), então duas coisas precisam
+bater:
+
+| O quê                  | Dev                     | Preview (compose)         |
+| ---------------------- | ----------------------- | ------------------------- |
+| `VITE_API_BASEURL`     | `sgv-web/.env` → `:8080` | build arg no `compose.yaml` → `:8081` |
+| `CORS_ALLOWED_ORIGINS` | default do `application.properties` → `:5173` | env do serviço `api` → `:5174` |
+
+`VITE_API_BASEURL` é embutido no bundle **em tempo de build** (Vite), e o `.env`
+está no `.dockerignore` — por isso o valor do preview vai como `args:` no
+`compose.yaml` e não como `environment:`. Mudou a URL da API? Precisa
+`--build`, não basta `up`.
+
+Do lado da API, `CorsConfig` (em `sgv-api/.../shared/`) lê
+`CORS_ALLOWED_ORIGINS` (lista separada por vírgula). Sem auth ainda, então não
+tem `allowCredentials`; quando entrar login com cookie/token, ativar isso e aí
+a lista de origens não pode mais ser genérica.
+
 ## Pendências
 
-- `nginx.conf` do frontend não tem proxy pra API. Quando o front começar a
-  chamar o back, precisa de um `location /api/ { proxy_pass http://api:8080/; }`
-  ou configurar CORS na API (hoje não tem nenhum dos dois).
 - `compose.yaml` e este arquivo estão na pasta `ES2/`, que não é um repo git.
   Enquanto não forem versionados, cada dev precisa criá-los na mão.
