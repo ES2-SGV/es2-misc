@@ -1,2 +1,7 @@
 sgv-api
 sgv-web
+
+# Credenciais reais — nunca versionar (o modelo é .env.example)
+.env
+.env.*
+!.env.example
