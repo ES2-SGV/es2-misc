@@ -30,10 +30,14 @@ A porta da API aceita override por env var: `SERVER_PORT=9000 ./mvnw spring-boot
 
 Dev e preview **não compartilham dados**:
 
-| Ambiente | Host           | Database  | Usuário / senha     |
-| -------- | -------------- | --------- | ------------------- |
-| Dev      | localhost:5432 | `sgv_db`  | `postgres` / `root` |
-| Preview  | localhost:5433 | `sgv_api` | `postgres` / `postgres` |
+| Ambiente | Host           | Database  | Usuário da aplicação |
+| -------- | -------------- | --------- | -------------------- |
+| Dev      | localhost:5432 | `sgv_db`  | `sgv_api`            |
+| Preview  | localhost:5433 | `sgv_api` | `sgv_api`            |
+
+As senhas ficam no `.env` (preview) e em `sgv-api/application-local.properties`
+(dev) — nunca em arquivo versionado. Quem cria os usuários e o que cada um pode
+fazer está em `SEGURANCA-BD.md`; os scripts, em `db/`.
 
 O preview usa o volume `sgv_pgdata`. `docker compose down -v` apaga esses dados.
 
@@ -56,13 +60,14 @@ bater:
 
 | O quê                  | Dev                     | Preview (compose)         |
 | ---------------------- | ----------------------- | ------------------------- |
-| `VITE_API_BASEURL`     | `sgv-web/.env` → `:8080` | build arg no `compose.yaml` → `:8081` |
+| Base URL da API        | `sgv-web/.env` → `VITE_DEV_API_BASEURL` (`:8080`) | build arg `VITE_PROD_API_BASEURL` no `compose.yaml` (`:8081`) |
 | `CORS_ALLOWED_ORIGINS` | default do `application.properties` → `:5173` | env do serviço `api` → `:5174` |
 
-`VITE_API_BASEURL` é embutido no bundle **em tempo de build** (Vite), e o `.env`
-está no `.dockerignore` — por isso o valor do preview vai como `args:` no
-`compose.yaml` e não como `environment:`. Mudou a URL da API? Precisa
-`--build`, não basta `up`.
+São duas variáveis porque o `client.ts` escolhe pela flag `import.meta.env.PROD`:
+`npm run dev` pega a de dev, `npm run build` pega a de prod. O valor é embutido
+no bundle **em tempo de build** (Vite), e o `.env` está no `.dockerignore` — por
+isso o preview passa o dele como `args:` no `compose.yaml`, e não como
+`environment:`. Mudou a URL da API? Precisa `--build`, não basta `up`.
 
 Do lado da API, `CorsConfig` (em `sgv-api/.../shared/`) lê
 `CORS_ALLOWED_ORIGINS` (lista separada por vírgula). Sem auth ainda, então não
@@ -71,5 +76,5 @@ a lista de origens não pode mais ser genérica.
 
 ## Pendências
 
-- `compose.yaml` e este arquivo estão na pasta `ES2/`, que não é um repo git.
-  Enquanto não forem versionados, cada dev precisa criá-los na mão.
+- Cada dev precisa criar seu `.env` a partir do `.env.example` — sem ele o
+  `docker compose up` falha de propósito, para não existir senha padrão.

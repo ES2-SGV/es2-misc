@@ -35,6 +35,8 @@ ES2/
 ├── compose.yaml
 ├── README.md
 ├── especificacao-requisitos-sgv.md
+├── .env.example
+├── db/
 ├── sgv-api/     <- clonado
 └── sgv-web/     <- clonado
 ```
@@ -44,9 +46,20 @@ ES2/
 Precisa apenas de **Docker** com o plugin Compose. Nada de Java, Node ou
 Postgres instalados na máquina.
 
+Antes da primeira subida, crie o arquivo de credenciais a partir do modelo e
+troque as senhas — não existe senha padrão no projeto:
+
+```bash
+cp .env.example .env
+${EDITOR:-nano} .env
+```
+
 ```bash
 docker compose up -d --build
 ```
+
+Na criação do banco, os scripts de `db/` rodam sozinhos e criam os grupos,
+usuários e o schema. Detalhes em `SEGURANCA-BD.md` e `db/README.md`.
 
 A primeira execução demora alguns minutos (baixa dependências Maven e npm). As
 seguintes são rápidas por causa do cache.
@@ -68,7 +81,7 @@ quando o Postgres responde ao `pg_isready`, e o frontend só quando o
 | API | http://localhost:8081 |
 | Documentação da API (Swagger) | http://localhost:8081/swagger-ui.html |
 | Health check da API | http://localhost:8081/actuator/health |
-| Banco (via psql/DBeaver) | `localhost:5433`, db `sgv_api`, user/senha `postgres` / `postgres` |
+| Banco (via psql/DBeaver) | `localhost:5433`, db `sgv_api`, user `sgv_dev` (senha no seu `.env`) |
 
 Comece pelo Swagger: ele lista todos os endpoints e permite testá-los pelo navegador.
 
@@ -110,14 +123,17 @@ do lado esquerdo em `ports:` no `compose.yaml`.
 imagem antiga. Sempre use `--build` depois de alterar código.
 
 **O frontend não conversa com a API** — a URL da API é embutida no bundle em
-tempo de *build* (`VITE_API_BASEURL`, definido como `args:` no `compose.yaml`).
+tempo de *build* (`VITE_PROD_API_BASEURL`, definido como `args:` no `compose.yaml`).
 Mudou a URL? Precisa de `--build`, não basta reiniciar.
 
-**A API não sobe depois de mudar uma entidade** — o schema é criado pelo
-Hibernate (`ddl-auto=update`). Adicionar um campo obrigatório a uma tabela que já
-tem dados faz a subida falhar, porque não há valor para as linhas existentes.
-Em desenvolvimento, resolve com `docker compose down -v` (apaga o banco e recria
-o schema do zero).
+**A API não sobe depois de mudar uma entidade** — o schema agora vem de
+`db/03-schema.sql` e a API roda com `ddl-auto=validate`. Se você mudou uma
+`@Entity` sem mexer no script, o Hibernate reclama que o mapeamento não bate.
+Atualize o script e recrie o banco com `docker compose down -v`.
+
+**`FATAL: password authentication failed for user "sgv_api"`** — o volume do
+banco é anterior aos scripts de `db/`, então os usuários nunca foram criados.
+`docker compose down -v` e suba de novo (apaga os dados de preview).
 
 **Build da API muito lento na primeira vez** — normal, é o Maven baixando as
 dependências dentro do container.
@@ -147,3 +163,5 @@ Cada repositório tem seu próprio README com os detalhes.
 | `Diagrama caso de uso.pdf` | Diagrama de casos de uso |
 | `infos.md` | Planejamento das sprints |
 | `PORTS.md` | Detalhamento de portas e configuração de rede |
+| `SEGURANCA-BD.md` | Grupos, usuários, permissões e guarda de credenciais do banco |
+| `db/README.md` | Como rodar os scripts de banco em dev e em Docker |
