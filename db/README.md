@@ -6,7 +6,7 @@ Rodam nesta ordem, e cada um pode ser executado de novo sem quebrar:
 | --- | --- |
 | `01-grupos.sql` | Cria os grupos `sgv_ddl`, `sgv_app`, `sgv_leitura` |
 | `02-usuarios.sql` | Cria os usuários e coloca cada um no seu grupo |
-| `03-schema.sql` | Tabelas `destino`, `area`, `colaborador`, `viagem` |
+| `03-schema.sql` | Tabelas `destino`, `area`, `colaborador`, `colaborador_lotacao`, `viagem`, `viagem_historico` |
 | `04-permissoes.sql` | GRANTs dos grupos |
 | `init/00-bootstrap.sh` | Roda os quatro na criação do container Postgres |
 
