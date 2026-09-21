@@ -87,25 +87,6 @@ BEGIN
   END IF;
 END $$;
 
--- Migração: área e cargo saíram de colaborador e viraram colaborador_lotacao.
--- Os valores atuais viram a primeira lotação, aberta agora — não há como saber
--- desde quando valiam, e inventar uma data anterior seria forjar histórico.
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.columns
-              WHERE table_schema = 'public'
-                AND table_name = 'colaborador'
-                AND column_name = 'area_id') THEN
-
-    INSERT INTO colaborador_lotacao (colaborador_id, area_id, cargo, inicio)
-    SELECT id, area_id, cargo, now() FROM colaborador;
-
-    -- DROP COLUMN leva junto a FK e o índice que dependiam dela.
-    ALTER TABLE colaborador DROP COLUMN cargo;
-    ALTER TABLE colaborador DROP COLUMN area_id;
-  END IF;
-END $$;
-
 -- Migração: colaborador ganhou `cargo`. Quem já existia entra como
 -- COLABORADOR — promover a GESTOR é decisão de negócio, não de migração.
 DO $$
@@ -124,6 +105,25 @@ BEGIN
     ALTER TABLE colaborador ALTER COLUMN cargo SET NOT NULL;
     ALTER TABLE colaborador
       ADD CONSTRAINT ck_colaborador_cargo CHECK (cargo IN ('COLABORADOR', 'GESTOR'));
+  END IF;
+END $$;
+
+-- Migração: área e cargo saíram de colaborador e viraram colaborador_lotacao.
+-- Os valores atuais viram a primeira lotação, aberta agora — não há como saber
+-- desde quando valiam, e inventar uma data anterior seria forjar histórico.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_schema = 'public'
+                AND table_name = 'colaborador'
+                AND column_name = 'area_id') THEN
+
+    INSERT INTO colaborador_lotacao (colaborador_id, area_id, cargo, inicio)
+    SELECT id, area_id, cargo, now() FROM colaborador;
+
+    -- DROP COLUMN leva junto a FK e o índice que dependiam dela.
+    ALTER TABLE colaborador DROP COLUMN cargo;
+    ALTER TABLE colaborador DROP COLUMN area_id;
   END IF;
 END $$;
 
